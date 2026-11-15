@@ -788,10 +788,23 @@ document.addEventListener('click', e=>{
 });
 ['render','renderPractice','renderExam','renderExamResult'].forEach(nm=>{ const f = window[nm]; if(typeof f === 'function') window[nm] = function(){ auStop(); return f.apply(this, arguments); }; });
 
-/* ===== v3.8: khung chat "Hỏi AI" — offline trong dữ liệu app + API tùy chọn (key chỉ ở localStorage) ===== */
+/* ===== v3.8: khung chat "Hỏi AI" — offline trong dữ liệu app + API tùy chọn (key người dùng tự nhập, chỉ lưu ở phía người dùng) ===== */
 const aiCfg = {url:'https://api.openai.com/v1/chat/completions', model:'gpt-4o-mini', key:'', spk:false};
-try{ const s = JSON.parse(localStorage.getItem('tg3aicfg')||'null'); if(s) Object.assign(aiCfg, s); }catch(e){}
-function aiSaveCfg(){ try{ localStorage.setItem('tg3aicfg', JSON.stringify(aiCfg)); }catch(e){} }
+/*__AISTORE_BEGIN__*/
+const aiStore = {
+  load(){
+    try{ if(window.hatchWidget && window.hatchWidget.getState){ const s = window.hatchWidget.getState({}); if(s && typeof s==='object' && !s.then && s.aicfg) return s.aicfg; } }catch(e){}
+    try{ const s = JSON.parse(localStorage.getItem('tg3aicfg')||'null'); if(s) return s; }catch(e){}
+    return null;
+  },
+  save(cfg){
+    try{ if(window.hatchWidget && window.hatchWidget.setState){ S.aicfg = cfg; save(); return; } }catch(e){}
+    try{ localStorage.setItem('tg3aicfg', JSON.stringify(cfg)); }catch(e){}
+  }
+};
+/*__AISTORE_END__*/
+try{ const s = aiStore.load(); if(s) Object.assign(aiCfg, s); }catch(e){}
+function aiSaveCfg(){ aiStore.save(aiCfg); }
 let aiHist = [], aiGreeted = false;
 function aiAdd(role, text){
   const box = $('#tg3aimsgs'); if(!box) return null;
